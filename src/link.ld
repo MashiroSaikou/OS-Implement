@@ -7,7 +7,7 @@ SECTIONS
     *(.text)
     . = ALIGN(4096);
   }
-
+  
   .data :
   {
      data = .; _data = .; __data = .;

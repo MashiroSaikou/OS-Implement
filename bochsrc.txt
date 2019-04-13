@@ -1,5 +1,5 @@
  
-megs: 32
+megs: 16
 romimage: file=/usr/share/bochs/BIOS-bochs-latest
 vgaromimage: file=/usr/share/bochs/VGABIOS-elpin-2.40
 floppya: 1_44=/dev/loop0, status=inserted
