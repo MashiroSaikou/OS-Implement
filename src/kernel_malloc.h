@@ -8,4 +8,6 @@ uint32 _malloc_a(uint32 m_size, size_t isAlign);
 
 uint32 _malloc_ap(uint32 m_size, size_t isAlign, uint32 *phy_address);
 
+void kfree(void* addr);
+
 #endif
