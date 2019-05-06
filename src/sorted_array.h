@@ -10,7 +10,7 @@ typedef struct _sorted_array_t{
 	uint32 size;
 	uint32 cur;
 	cmp_fun_t cmp_fun;
-}sorted_array_t;vo
+}sorted_array_t;
 
 /*function for comparing*/
 uint32 cmp(void* a, void* b);

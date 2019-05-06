@@ -44,7 +44,7 @@ void insert_sorted_array(void* item, sorted_array_t *a)
 	while (iter < a->size && a->cmp_fun(a->array[iter], item) < 0)
 		iter ++;
 	if (iter == a->size){
-		a->array[iter++] = item;
+		a->array[a->size++] = item;
 	}
 	else {
 		void* temp = a->array[iter];
