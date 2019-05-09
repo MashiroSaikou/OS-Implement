@@ -6,7 +6,7 @@ isr_t interrupt_handler[256];
 
 void isr_handler(registers_t reg)
 {
-	printf("\n%d",reg.int_no);
+	//printf("\n%d",reg.int_no);
 	if (interrupt_handler[reg.int_no] != NULL) {
 		isr_t handler = interrupt_handler[reg.int_no];
 		handler(reg);

@@ -32,4 +32,8 @@ typedef struct _page_dir_struct
 }page_dir_struct;
 
 void init_paging();
+page_struct* get_page(uint32 addr, int make, page_dir_struct* dir);
+void alloc_frame(page_struct* page, int is_kernel, int is_writable);
+void free_frame(page_struct* page);
+void switch_page_directory(page_dir_struct *dir);
 #endif							

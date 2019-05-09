@@ -20,10 +20,11 @@ uint16 inw(uint16 port)
    return ret;
 }
 
-void * memset(void * h, int v, size_t l){
+void * memset(void* h, int v, size_t l){
 	char* t_h;
 	for(t_h = h; l > 0; l --) {
-		*t_h++ = v;
+		*t_h = v;
+    t_h ++;
 	}
 	return h;
 }

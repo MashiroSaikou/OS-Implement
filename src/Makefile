@@ -10,7 +10,9 @@ SOURCES=boot.o \
 			timer.o\
 			printf.o\
 			page.o\
-			kernel_malloc.o
+			kernel_malloc.o\
+			sorted_array.o\
+			kheap.o
 CFLAGS=-nostdlib -nostdinc -fno-builtin -fno-stack-protector -g -m32 -I.
 LDFLAGS=-Tlink.ld -melf_i386
 ASFLAGS=-felf

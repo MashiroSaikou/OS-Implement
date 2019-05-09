@@ -2,8 +2,8 @@
 #define SORTED_ARRAY_H
 
 #include "common.h"
-
-typedef uint32 (*cmp_fun_t)(void*, void*);
+#include "kernel_malloc.h"
+typedef int (*cmp_fun_t)(void*, void*);
 
 typedef struct _sorted_array_t{
 	void* *array;
@@ -13,7 +13,7 @@ typedef struct _sorted_array_t{
 }sorted_array_t;
 
 /*function for comparing*/
-uint32 cmp(void* a, void* b);
+int cmp(void* a, void* b);
 
 sorted_array_t create_sorted_array(uint32 size, cmp_fun_t cmp);
 sorted_array_t place_sorted_array(void* addr, uint32 maxsize, cmp_fun_t cmp);

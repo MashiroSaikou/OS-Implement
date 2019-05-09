@@ -3,6 +3,7 @@
 
 extern page_dir_struct* vm_page_dir;
 
+heap_t* kheap;
 /*
  * find the first fit hole one by one
  * notice the whether it is oage aligned
@@ -43,44 +44,46 @@ static int32 find_hole_fit_first(uint32 size,
 		return iter;
 }
 
-static int8 header_cmp_less(void *a, void *b) {
+static int header_cmp_less(void *a, void *b) {
 	return ((header_t*)a)->size < ((header_t*)b)->size ? 1:0;
 }
 
-heap_t* create_heap(uint32 start, 
+heap_t* create_heap(heap_t *heap,
+					uint32 start, 
 					uint32 end, 
 					uint32 max, 
 					uint8 supervisor, 
 					uint8 readonly) 
 {
-	heap_t *heap = (heap_t*)_malloc_s(sizeof(heap_t));
-
 	heap->index = place_sorted_array((void*)start, HEAP_INDEX_SIZE, &header_cmp_less);
 	start += sizeof(void*) * HEAP_INDEX_SIZE;
 
 	if (start & 0x00000FFF != 0) {
-		start &= 0x00000FFF;
+		start &= 0xFFFFF000;
 		start += 0x1000;
 	}
 
 	heap->start_address = start;
 	heap->end_address = end;
 	heap->max_address = max;
-	heap->supervisor = supervisor;
 	heap->readonly = readonly;
+	heap->supervisor = supervisor;
 
-	header_t* hole = (header_t*)start;
-	hole->size = end_address - start;
+	printf("%x\n", start);
+	header_t* hole = start;
+	printf("%x\n", *hole);
+	hole->size = end - start;
 	hole->magic = HEAP_MAGIC;
 	hole->is_hole = 1;
+	
 	insert_sorted_array((void*)hole, &heap->index);
-
+	
 	return heap;
 }
 
-start void expand(uint32 new_size, heap_t* heap) {
+static void expand(uint32 new_size, heap_t* heap) {
 	if (new_size & 0x00000FFF != 0) {
-		new_size &= 0x00000FFF;
+		new_size &= 0xFFFFF000;
 		new_size += 0x1000;
 	}
 
@@ -96,7 +99,7 @@ start void expand(uint32 new_size, heap_t* heap) {
 
 static uint32 contract(uint32 new_size, heap_t* heap) {
 	if (new_size & 0x00000FFF != 0) {
-		new_size &= 0x00000FFF;
+		new_size &= 0xFFFFF000;
 		new_size += 0x1000;
 	}
 
@@ -107,9 +110,8 @@ static uint32 contract(uint32 new_size, heap_t* heap) {
 	uint32 old_size = heap->end_address - heap->start_address;
 	uint32 i = old_size - 0x1000;
 	while (new_size < i) {
-		free_frame(get_page(heap->start_address + i, 0, vm_page_dir),
-						(heap->supervisor) ? 1:0, (heap->readonly)? 1:0)
-		i -= 0x1000;
+		free_frame(get_page(heap->start_address + i, 0, vm_page_dir));
+				i -= 0x1000;
 	}
 
 	heap->end_address = heap->start_address + new_size;
@@ -143,7 +145,7 @@ void* alloc(uint32 size, uint8 page_align, heap_t* heap) {
 		}
 
 		if (idx == -1) {
-			header_t *header = (header_t)old_end_address;
+			header_t *header = (header_t*)old_end_address;
 			header->magic = HEAP_MAGIC;
 			header->size = new_len - old_len;
 			header->is_hole = 1;
@@ -193,9 +195,9 @@ void* alloc(uint32 size, uint8 page_align, heap_t* heap) {
 	block_header->magic = HEAP_MAGIC;
 	block_header->is_hole = 0;
 	block_header->size = new_size;
-	footer_t *block_header = (footer_t*)(origin_hole_pos + origin_hole_size - sizeof(footer_t));
-	block_header->magic = HEAP_MAGIC;
-	block_header->header = block_header;
+	footer_t *block_footer = (footer_t*)(origin_hole_pos + origin_hole_size - sizeof(footer_t));
+	block_footer->magic = HEAP_MAGIC;
+	block_footer->header = block_header;
 
 	/* the size of hole is bigger than what we need*/
 	if (origin_hole_size > new_size) {
@@ -214,3 +216,68 @@ void* alloc(uint32 size, uint8 page_align, heap_t* heap) {
 
 	return (void*)((uint32)block_header + sizeof(header_t));
 }
+
+
+void free(void* p, heap_t *heap) {
+	if (p = 0) return;
+
+	header_t *header = (header_t*)((uint32)p - sizeof(header_t));
+	footer_t *footer = (footer_t*)((uint32)header + header->size - sizeof(footer_t));
+
+	header->is_hole = 1;
+
+	char do_add = 1;
+
+	/* if the last hole is free, so we can contract them.*/
+	footer_t *test_footer = (footer_t*)((uint32)header - sizeof(footer_t));
+	if(test_footer->header->is_hole == 1 && test_footer->magic == HEAP_MAGIC) {
+		uint32 cache_size = header->size;
+		header = test_footer->header;
+		footer->header = header;
+		header->size += cache_size;
+		do_add = 0;
+	}
+
+	/* if the next hole is free , same as the above*/
+	header_t* test_header = (header_t*)((uint32)footer + sizeof(footer_t));
+	if(test_header->is_hole == 1 && test_header->magic == HEAP_MAGIC) {
+		uint32 cache_size = test_header->size;
+		footer = (footer_t*)((uint32)test_header + test_header->size - sizeof(footer_t));
+		footer->header = header;
+		header->size += cache_size;
+		do_add = 0;
+
+		uint32 iter = 0;
+		while (iter < heap->index.size &&
+				(find_sorted_array(iter, &heap->index) != (void*)test_header)) {
+			iter ++;
+		}
+
+		remove_sorted_array(iter, &heap->index);
+	}
+
+	if ((uint32)footer + sizeof(footer_t) == heap->end_address) {
+		uint32 old_len = heap->end_address - heap->start_address;
+		uint32 new_len = contract((uint32)header- heap->start_address, heap);
+
+		if (header->size - (old_len - new_len) > 0) {
+			header->size -= (old_len - new_len);
+			footer = (footer_t*)((uint32)header + header->size - sizeof(footer_t));
+			footer->magic = HEAP_MAGIC;
+			footer->header = header;
+		}
+		else {
+			uint32 iter = 0;
+			while (iter < heap->index.size &&
+					(find_sorted_array(iter, &heap->index) != (void*)test_header)) {
+				iter ++;
+			}
+			if (iter < heap->index.size) {
+				remove_sorted_array(iter, &heap->index);
+			}
+		}
+	}
+
+	if (do_add == 1) insert_sorted_array((void*)header, &heap->index);
+}
+

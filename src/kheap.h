@@ -1,4 +1,4 @@
-##ifndef KHEAP_H
+#ifndef KHEAP_H
 #define KHEAP_H
 
 #define KHEAP_START         0xC0000000
@@ -20,7 +20,7 @@ typedef struct _header_t
 
 typedef struct _footer_t
 {
-	uin32 magic;
+	uint32 magic;
 	header_t* header;
 }footer_t;
 
@@ -34,7 +34,8 @@ typedef struct _heap_t
 	uint8 readonly;
 }heap_t;
 
-heap_t* create_heap(uint32 start, 
+heap_t* create_heap(heap_t* heap,
+					uint32 start, 
 					uint32 end, 
 					uint32 max, 
 					uint8 supervisor, 

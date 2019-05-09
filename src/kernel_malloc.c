@@ -1,8 +1,12 @@
 #include "kernel_malloc.h"
+#include "kheap.h"
+#include "page.h"
 /*this is defined in link.ld
  *the pyhsical address of __end is the end of kernel
  */
 extern uint32 __end;
+extern heap_t* kheap;
+extern page_dir_struct* vm_page_dir;
 uint32 placement_address = (uint32)&__end;
 /*
 alloc extendly memory the size of which is m_size
@@ -45,5 +49,8 @@ uint32 _malloc_ap(uint32 m_size, size_t isAlign, uint32 *phy_address)
 	return tmp_placement_address;
 }
 
+void kfree(void* addr) {
+	free(addr, kheap);
+}
 
 

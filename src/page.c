@@ -1,7 +1,9 @@
 #include "page.h"
+#include "kheap.h"
 #define INDEX_FROM_BITMAP(x) ((x)/8)
 #define OFFSET_FROM_BOTMAP(x) ((x)%8)
 extern uint32 placement_address;
+extern heap_t* kheap;
 const uint32 MEMORY_SIZE = 0x1000000; /*32MB*/
 const uint32 PAGE_SIZE = 0x1000; /*4KB*/
 const uint32 FRAME_COUNT = MEMORY_SIZE / PAGE_SIZE;
@@ -10,8 +12,6 @@ page_dir_struct* cur_vm_page_dir;
 uint8* frames;
 uint32 frames_bitmap_size;
 
-void switch_page_directory(page_dir_struct *dir);
-page_struct* get_page(uint32 addr, int make, page_dir_struct* dir);
 static void page_fault();
 
 static void set_frame(uint32 frame_addr)
@@ -19,9 +19,9 @@ static void set_frame(uint32 frame_addr)
 	uint32 frame_index = frame_addr / 0x1000;
 	uint32 index = INDEX_FROM_BITMAP(frame_index);
 	uint32 offset = OFFSET_FROM_BOTMAP(frame_index);
-	printf("set:%d, %d\n", index, offset);
+	//printf("set:%d, %d\n", index, offset);
 	frames[index] |= (0x80 >> offset); 
-	printf("set:%x\n", frames[index]);
+	//printf("set:%x\n", frames[index]);
 }
 
 static void clear_frame(uint32 frame_addr)
@@ -50,7 +50,7 @@ static uint32 first_frame()
 		for(j = 0; j < 8; j ++){
 			//uint8 temp = 0x80 >> j;
 			if (((~(0x80 >> j))|frames[i]) != 0xFFFFFFFF){
-				printf("first: %x, %d\n",(~(0x80 >> j))|frames[i], frames[i]);
+				//printf("first: %x, %d\n",(~(0x80 >> j))|frames[i], frames[i]);
 				return i*8 + j;
 			}
 		}
@@ -65,7 +65,6 @@ void alloc_frame(page_struct* page, int is_kernel, int is_writable)
 	}
 	else{
 		uint32 frame_index = first_frame();
-		printf("alloc:%d\n", frame_index);
 		if (frame_index == -1){
 			printf("%s\n", "[warning]No free frame...");
 		} 
@@ -97,51 +96,40 @@ void init_paging()
 
 	/*initialise the bitmap of frames*/
 	frames_bitmap_size = FRAME_COUNT/8;
-	//printf("%d\n", frames_bitmap_size);
 	frames = (uint8*)_malloc_s(frames_bitmap_size);
 	memset(frames, 0, frames_bitmap_size);
 
 	/*initialise the things about page*/
 	vm_page_dir = (page_dir_struct*)_malloc_a(sizeof(page_dir_struct), 1);
-	//printf("vmaddr:%x\n", vm_page_dir);
-	memset(vm_page_dir, 0, sizeof(page_dir_struct));
+	//memset(vm_page_dir, 0, sizeof(page_dir_struct));
 	//cur_vm_page_dir = vm_page_dir;
+	
+	int i = 0;
+	for (i = KHEAP_START; i < KHEAP_START + KHEAP_INITIAL_SIZE; i += 0x1000) {
+		get_page(i, 1, vm_page_dir);
+	}
+
+	heap_t* heap = (heap_t*)_malloc_s(sizeof(heap_t));
 
 	/*map the memory of kernel to the vm_page*/
-	uint32 i = 0, j = 0;
-	//printf("%x\n", placement_address);
+	i = 0;
 	while (i < placement_address){
-		//printf("address: %x;;;", i);
 		alloc_frame(get_page(i, 1, vm_page_dir), 0, 0);
 		i += PAGE_SIZE;
-
-		// if(j < 8) printf("%x\n", frames[0]);
-		// j += 1;	
 	}
-	//printf("%d\n", j);
-	// printf("%x\n", placement_address);
-	// int j = 0;
-	// for(;j < 1024; j++){
-	// 	if(vm_page_dir->page_table[j]!=NULL){
-	// 		printf("page: %x\n", vm_page_dir->page_table[j]);
-	// 	}
-	// }
+
+	for (i = KHEAP_START; i < KHEAP_START + KHEAP_INITIAL_SIZE; i += 0x1000) {
+		alloc_frame(get_page(i, 0, vm_page_dir), 0, 0);
+	}
+	
+	
 	/* register the fault handle of page fault*/
 	register_interrupt_handler(14, &page_fault);
-	//register_interrupt_handler(13, &thirteenisr);
 
 	/*switch page directory to kernel directory*/
-	//printf("%x\n", placement_address);
-	page_struct* _page = get_page(0x0000000000102003, 0, vm_page_dir);
-	if(_page == NULL)
-	{
-		printf("null\n");
-	}
-	else
-	{
-		printf("%d\n", _page->frame);
-	}
 	switch_page_directory(vm_page_dir);
+
+	kheap = create_heap(heap, KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
 }
 
 page_struct* get_page(uint32 addr, int make, page_dir_struct* dir)
@@ -149,18 +137,17 @@ page_struct* get_page(uint32 addr, int make, page_dir_struct* dir)
 	addr /= PAGE_SIZE; /*first and second index with 20bits*/
 	uint32 index = addr/1024; /*first index with 10bits*/
 	if (dir->page_table[index] != NULL) {
-		printf("get_page:%x, %x", index, addr%1024);
+		//printf("get_page:%x, %x", index, addr%1024);
 		/* if second index is exist*/
 		return &(dir->page_table[index]->pages[addr % 1024]);
 	}
 	else if(make) {
-		printf("get_page:%x, %x", index, addr%1024);
+		//printf("get_page:%x, %x", index, addr%1024);
 		/*second index is not exist so we need to make one*/
 		uint32 temp_address_phy;
 		dir->page_table[index] = (page_table_struct*)_malloc_ap(sizeof(page_table_struct),
 																	1,
 																	&temp_address_phy);
-		//printf("%x\n", sizeof(page_table_struct));
 		memset(dir->page_table[index], 0, sizeof(page_table_struct));
 		dir->page_table_phy[index] = temp_address_phy | 0x7;
 		return &(dir->page_table[index]->pages[addr % 1024]);
@@ -182,7 +169,7 @@ void switch_page_directory(page_dir_struct *dir)
 	//_panic("to switch\n");
 	asm volatile("mov %0, %%cr0":: "r"(cr0));
 	asm volatile("sti");
-	printf("heah\n");
+	//printf("heap\n");
 }
 
 
@@ -193,7 +180,7 @@ static void page_fault(registers_t regs)
 	// The faulting address is stored in the CR2 register.
 	uint32 faulting_address;
 	asm volatile("mov %%cr2, %0" : "=r" (faulting_address));
-	printf("\n%x", faulting_address);
+	//printf("\n%x", faulting_address);
 	// The error code gives us details of what happened.
 	int present   = !(regs.err_code & 0x1); // Page not present
 	int rw = regs.err_code & 0x2;           // Write operation?
@@ -202,13 +189,13 @@ static void page_fault(registers_t regs)
 	int id = regs.err_code & 0x10;          // Caused by an instruction fetch?
 
 	// Output an error message.
-	printf("Page fault! ( ");
-	if (present) {printf("present ");}
-	if (rw) {printf("read-only ");}
-	if (us) {printf("user-mode ");}
-	if (reserved) {printf("reserved ");}
-	printf(") at 0x");
-	printf("%x", faulting_address);
-	printf("\n");
-	printf("Page fault");
+	// printf("Page fault! ( ");
+	// if (present) {printf("present ");}
+	// if (rw) {printf("read-only ");}
+	// if (us) {printf("user-mode ");}
+	// if (reserved) {printf("reserved ");}
+	// printf(") at 0x");
+	// printf("%x", faulting_address);
+	// printf("\n");
+	// printf("Page fault");
 }

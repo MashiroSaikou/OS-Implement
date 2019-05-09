@@ -1,7 +1,7 @@
 #include "sorted_array.h"
-
+#include "kernel_malloc.h"
 /*it is a descending comparison function*/
-uint32 cmp(void* a, void *b)
+int cmp(void* a, void *b)
 {
 	return (a < b ? 1 : 0);
 }
@@ -9,7 +9,7 @@ uint32 cmp(void* a, void *b)
 sorted_array_t create_sorted_array(uint32 size, cmp_fun_t cmp)
 {
 	sorted_array_t a;
-	a.array = (void*)_malloc_s(size * size(void*));
+	a.array = (void*)_malloc_s(size * sizeof(void*));
 	if (a.array == NULL){
 		_panic("error in create_sorted_array\n");
 	}
@@ -25,24 +25,25 @@ sorted_array_t place_sorted_array(void* addr, uint32 maxsize, cmp_fun_t cmp)
 {
 	sorted_array_t a;
 	a.array = addr;
-	memset(a.array, 0, maxsize);
+	//memset(a.array, 0, maxsize*sizeof(void*));
 	a.size = maxsize;
 	a.cur = 0;
 	a.cmp_fun = cmp;
-
 	return a;
 }
 
 void free_sorted_array(sorted_array_t *array)
 {
-	//to do;
+	kfree(array->array);
 }
 
 void insert_sorted_array(void* item, sorted_array_t *a)
 {
 	uint32 iter = 0;
-	while (iter < a->size && a->cmp_fun(a->array[iter], item) < 0)
+	while (iter < a->size && a->cmp_fun(a->array[iter], item) < 0) {
 		iter ++;
+	}
+	
 	if (iter == a->size){
 		a->array[a->size++] = item;
 	}
@@ -70,7 +71,7 @@ void* find_sorted_array(uint32 index, sorted_array_t *a)
 void remove_sorted_array(uint32 index, sorted_array_t *a)
 {
 	uint32 iter;
-	if (a == NULL || a.array == NULL){
+	if (a == NULL || a->array == NULL){
 		_panic("error in remove item in sorted array\n");
 	}
 	if (index >= a->size){
