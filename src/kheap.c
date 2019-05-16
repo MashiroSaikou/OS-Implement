@@ -3,7 +3,7 @@
 
 extern page_dir_struct* vm_page_dir;
 
-heap_t* kheap;
+heap_t* kheap = NULL;
 /*
  * find the first fit hole one by one
  * notice the whether it is oage aligned
@@ -57,25 +57,21 @@ heap_t* create_heap(heap_t *heap,
 {
 	heap->index = place_sorted_array((void*)start, HEAP_INDEX_SIZE, &header_cmp_less);
 	start += sizeof(void*) * HEAP_INDEX_SIZE;
-
 	if (start & 0x00000FFF != 0) {
 		start &= 0xFFFFF000;
 		start += 0x1000;
 	}
-
+	
 	heap->start_address = start;
 	heap->end_address = end;
 	heap->max_address = max;
 	heap->readonly = readonly;
 	heap->supervisor = supervisor;
 
-	printf("%x\n", start);
-	header_t* hole = start;
-	printf("%x\n", *hole);
+	header_t* hole = (header_t*)start;
 	hole->size = end - start;
 	hole->magic = HEAP_MAGIC;
 	hole->is_hole = 1;
-	
 	insert_sorted_array((void*)hole, &heap->index);
 	
 	return heap;

@@ -13,8 +13,8 @@
  */
 typedef struct _header_t
 {
-	uint32 magic;
 	uint8 is_hole;
+	uint32 magic;
 	uint32 size;
 }header_t;
 

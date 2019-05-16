@@ -7,7 +7,7 @@ uint32 tick = 0;
 static void timer_callback(registers_t reg)
 {
 	tick ++;
-	printf("%s, %d\n","tick: ", tick );
+	//printf("%s, %d\n","tick: ", tick );
 }
 
 void init_timer(uint32 f)

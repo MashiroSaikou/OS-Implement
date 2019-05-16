@@ -6,6 +6,7 @@
 #include "page.h"
 #include "kernel_malloc.h"
 #include "common.h"
+#include "kheap.h"
 
 int main(struct multiboot *mboot_ptr)
 {
@@ -14,14 +15,13 @@ int main(struct multiboot *mboot_ptr)
 	monitor_write("hello, word!\n");
 	init_descriptor_tables();
 	init_paging();
-
-	uint32 b = _malloc_s(8);
-	printf("b:%x\n", b);
+	init_timer(1000);
+	printf("finish paging\n");
+	uint32 b = _malloc_s(1);
+	uint32 c = _malloc_s(1);
+	uint32 d = _malloc_s(1);
+	printf("b:%x, c:%x, d:%x\n", b, c, d);
 	kfree(b);
-	//init_timer(1000);
-
-
-	// uint32 *ptr = (uint32*)0xA0000000;
-	// uint32 do_page_fault = *ptr;
+	
 	return 0;
 }

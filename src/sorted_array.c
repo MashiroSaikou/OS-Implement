@@ -1,5 +1,6 @@
 #include "sorted_array.h"
 #include "kernel_malloc.h"
+#include "page.h"
 /*it is a descending comparison function*/
 int cmp(void* a, void *b)
 {
@@ -25,7 +26,7 @@ sorted_array_t place_sorted_array(void* addr, uint32 maxsize, cmp_fun_t cmp)
 {
 	sorted_array_t a;
 	a.array = addr;
-	//memset(a.array, 0, maxsize*sizeof(void*));
+	memset(a.array, 0, maxsize*sizeof(void*));
 	a.size = maxsize;
 	a.cur = 0;
 	a.cmp_fun = cmp;
