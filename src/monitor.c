@@ -71,7 +71,7 @@ void monitor_put(char c)
 		cursor_x = 0;
 	}
 
-	//scroll();
+	scroll();
 	move_cursor();
 }
 

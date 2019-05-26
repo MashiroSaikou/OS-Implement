@@ -2,12 +2,12 @@
 #include "monitor.h"
 #include "isr.h"
 #include "common.h"
-
+#include "task.h"
 uint32 tick = 0;
 static void timer_callback(registers_t reg)
 {
 	tick ++;
-	//printf("%s, %d\n","tick: ", tick );
+	task_switch();
 }
 
 void init_timer(uint32 f)

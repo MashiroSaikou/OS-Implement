@@ -15,6 +15,7 @@ uint8* frames;
 uint32 frames_bitmap_size;
 
 static void page_fault();
+static page_table_struct* clone_table(page_table_struct* src, uint32* phys);
 
 static void set_frame(uint32 frame_addr)
 {
@@ -104,10 +105,11 @@ void init_paging()
 	memset(frames, 0, frames_bitmap_size);
 
 	/*initialise the things about page*/
-	vm_page_dir = (page_dir_struct*)_malloc_a(sizeof(page_dir_struct), 1);
+	uint32 phy;
+	vm_page_dir = (page_dir_struct*)_malloc_ap(sizeof(page_dir_struct), &phy);
 	memset(vm_page_dir, 0, sizeof(page_dir_struct));
-	//cur_vm_page_dir = vm_page_dir;
-	
+	vm_page_dir->page_dir_phy = (uint32)vm_page_dir->page_table_phy;
+
 	int i = 0;
 	for (i = KHEAP_START; i < KHEAP_START + KHEAP_INITIAL_SIZE; i += 0x1000) {
 		page_struct* page = get_page(i, 1, vm_page_dir);
@@ -120,9 +122,6 @@ void init_paging()
 	//printf("first\n");
 	while (i < placement_address){
 		alloc_frame(get_page(i, 1, vm_page_dir), 0, 0);
-		// page_struct* page = get_page(i, 1, vm_page_dir);
-		// printf("%d, ", page->frame);
-		// alloc_frame(page, 0, 0);
 		i += PAGE_SIZE;
 	}
 	//printf("second:\n");
@@ -133,17 +132,21 @@ void init_paging()
 	register_interrupt_handler(14, &page_fault);
 
 	/*switch page directory to kernel directory*/
+	//printf("1:%x, 2:%x\n", vm_page_dir->page_dir_phy, vm_page_dir->page_table_phy);
 	switch_page_directory(vm_page_dir);
 	
-	char *b = KHEAP_START;
-	//*b = 0;
-	
+	//char *b = KHEAP_START;
+	//*b = 0
 	kheap = create_heap(heap, KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 0xCFFFF000, 0, 0);
-	
+
+	cur_vm_page_dir = clone_dir(vm_page_dir);
+
+	//printf("1:%x, 2:%x\n", cur_vm_page_dir->page_dir_phy, cur_vm_page_dir->page_table_phy);
+	//printf("new:%x, old:%x\n", vm_page_dir->page_dir_phy, cur_vm_page_dir->page_dir_phy);
+	switch_page_directory(cur_vm_page_dir);
 }
 
-page_struct* get_page(uint32 addr, int make, page_dir_struct* dir)
-{
+page_struct* get_page(uint32 addr, int make, page_dir_struct* dir) {
 	addr /= PAGE_SIZE; /*first and second index with 20bits*/
 	uint32 index = addr/1024; /*first index with 10bits*/
 	if (dir->page_table[index] != NULL) {
@@ -157,7 +160,6 @@ page_struct* get_page(uint32 addr, int make, page_dir_struct* dir)
 		/*second index is not exist so we need to make one*/
 		uint32 temp_address_phy;
 		dir->page_table[index] = (page_table_struct*)_malloc_ap(sizeof(page_table_struct),
-																	1,
 																	&temp_address_phy);
 		memset(dir->page_table[index], 0, sizeof(page_table_struct));
 		//printf("%x\n", dir->page_table[index]->pages[addr%1024].frame);
@@ -175,11 +177,12 @@ void switch_page_directory(page_dir_struct *dir)
 {
 	cur_vm_page_dir = dir;
 	asm volatile("cli");
-	asm volatile("mov %0, %%cr3":: "r"(&(dir->page_table_phy)));
+	asm volatile("mov %0, %%cr3":: "r"(dir->page_dir_phy));
 	int cr0;
 	asm volatile("mov %%cr0, %0": "=r"(cr0));
 	cr0 |= 0x80000000; // Enable paging!
 	asm volatile("mov %0, %%cr0":: "r"(cr0));
+	printf("there:%x\n", dir->page_dir_phy);
 	asm volatile("sti");
 }
 
@@ -206,7 +209,54 @@ static void page_fault(registers_t regs)
 	// if (us) {printf("user-mode ");}
 	// if (reserved) {printf("reserved ");}
 	// printf(") at 0x");
-	// printf("%x", faulting_address);
-	// printf("\n");
-	// printf("Page fault");
+	printf("%x", faulting_address);
+	printf("\n");
+	printf("Page fault");
+}
+
+page_dir_struct* clone_dir(page_dir_struct* src) {
+	uint32 phyAddr;
+	page_dir_struct* newdir = (page_dir_struct*)_malloc_ap(sizeof(page_dir_struct), &phyAddr);
+	memset(newdir, 0, sizeof(page_dir_struct));
+
+	uint32 offset = (uint32)newdir->page_table_phy - (uint32)newdir;
+	newdir->page_dir_phy = phyAddr + offset;
+
+	int i = 0;
+	for (i = 0; i < 1024; i++) {
+		if (!src->page_table[i]) continue;
+
+		if (vm_page_dir->page_table[i] == src->page_table[i]) {
+			newdir->page_table[i] = src->page_table[i];
+			newdir->page_table_phy[i] = src->page_table_phy[i];
+		}
+		else {
+			uint32 phys;
+			newdir->page_table[i] = clone_table(src->page_table[i], &phys);
+			newdir->page_table_phy[i] = phys | 0x07;
+		}
+	}
+	return newdir;
+}
+
+static page_table_struct* clone_table(page_table_struct* src, uint32* phys) {
+	page_table_struct* table = (page_table_struct*)_malloc_ap(sizeof(page_table_struct), phys);
+	memset(table, 0, sizeof(page_table_struct));
+
+	int i = 0;
+	for (i = 0; i < 1024; i++) {
+		printf("f:%d  ", src->pages[i].frame);
+		if (!src->pages[i].frame) continue;
+
+		alloc_frame(&table->pages[i], 0, 0);
+		if (src->pages[i].valid) table->pages[i].valid = 1;
+		if (src->pages[i].rw)      table->pages[i].rw = 1;
+		if (src->pages[i].user)    table->pages[i].user = 1;
+		if (src->pages[i].accessed)table->pages[i].accessed = 1;
+		if (src->pages[i].dirty)   table->pages[i].dirty = 1;
+
+		copy_page_phy(src->pages[i].frame*0x1000, table->pages[i].frame*0x1000);
+	}
+
+	return table;
 }

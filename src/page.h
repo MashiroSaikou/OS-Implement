@@ -5,6 +5,7 @@
 #include "isr.h"
 #include "kernel_malloc.h"
 
+extern void copy_page_phy(uint32, uint32);
 /*page enrty*/
 typedef struct _page_struct
 {
@@ -36,4 +37,6 @@ page_struct* get_page(uint32 addr, int make, page_dir_struct* dir);
 void alloc_frame(page_struct* page, int is_kernel, int is_writable);
 void free_frame(page_struct* page);
 void switch_page_directory(page_dir_struct *dir);
+
+page_dir_struct* clone_dir(page_dir_struct* src);
 #endif							

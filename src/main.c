@@ -7,21 +7,66 @@
 #include "kernel_malloc.h"
 #include "common.h"
 #include "kheap.h"
+#include "multiboot.h"
+#include "fs.h"
+#include "initrd.h"
+#include "task.h"
 
-int main(struct multiboot *mboot_ptr)
+struct multboot;
+uint32 initial_esp;
+extern uint32 placement_address;
+
+int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 {
   // All our initialisation calls will go in here.
 	monitor_clear();
 	monitor_write("hello, word!\n");
+	initial_esp = initial_stack;
 	init_descriptor_tables();
-	init_paging();
+	
 	init_timer(1000);
-	printf("finish paging\n");
-	uint32 b = _malloc_s(1);
-	uint32 c = _malloc_s(1);
-	uint32 d = _malloc_s(1);
-	printf("b:%x, c:%x, d:%x\n", b, c, d);
-	kfree(b);
+	uint32 initrd_location = *((uint32*)mboot_ptr->mods_addr);
+	uint32 initrd_end = *(uint32*)(mboot_ptr->mods_addr+4);
+	placement_address = initrd_end;
+	
+	init_paging();
+
+	// init_multitask();
+
+	// int ret = fork();
+	// if (ret = 0) {
+	// 	printf("this is child\n");
+	// }
+	// else {
+	// 	printf("this is parent\n");
+	// }
+
+	fs_root = initialise_initrd(initrd_location);
+	// printf("finish\n");
+	
+
+	// int i = 0;
+	// dirent_t *node = 0;
+	// while ((node = readdir_fs(fs_root, i)) != 0) {
+	// 	printf("find file:%s\n", node->name);
+	// 	fs_node_t *fsnode = finddir_fs(fs_root, node->name);
+
+	// 	if((fsnode->flags&0x7) == FS_DIRECTORY) {
+	// 		printf("(directory)\n");
+	// 	}
+	// 	else {
+	// 		printf("contents:\"\n");
+	// 		char buf[256];
+	// 		uint32 sz = read_fs(fsnode, 0, 256, buf);
+	// 		int j;
+	// 		for (j = 0; j < sz; j++) {
+	// 			printf("%c",buf[j]);
+	// 		}
+	// 		printf("\"\n");
+	// 	}
+
+	// 	i ++;
+	// }
 	
 	return 0;
 }

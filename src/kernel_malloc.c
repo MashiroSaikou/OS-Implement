@@ -22,14 +22,14 @@ void* _malloc_s(uint32 m_size)
 /*
 alloc extendly memory like above but aligning with 4KB
  */
-void* _malloc_a(uint32 m_size, size_t isAlign)
+void* _malloc_a(uint32 m_size)
 {
-	return _malloc(m_size, isAlign, NULL);
+	return _malloc(m_size, 1, NULL);
 }
 
-void* _malloc_ap(uint32 m_size, size_t isAlign, uint32 *phy_address)
+void* _malloc_ap(uint32 m_size, uint32 *phy_address)
 {
-	return _malloc(m_size, isAlign, phy_address);
+	return _malloc(m_size, 1, phy_address);
 }
 
 static void* _malloc(uint32 m_size, size_t isAlign, uint32 *phy_address) {
