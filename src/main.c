@@ -32,12 +32,13 @@ int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 	
 	init_paging();
 	printf("init multitask\n");
-
+	
 	init_multitask();
 
 	
-	//int ret = fork();
-	//printf("?????\n");
+	int ret = fork();
+	printf("?????\n");
+	//for(;;);
 	// if (ret = 0) {
 	// 	for(;;)
 	// 		printf("this is child\n");

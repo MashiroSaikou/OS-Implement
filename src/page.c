@@ -192,27 +192,31 @@ static void page_fault(registers_t regs)
 	// if (reserved) {printf("reserved ");}
 	// printf(") at 0x");
 	printf("page fault:%x\n", faulting_address);
+	for(;;);
 }
 
 page_dir_struct* clone_dir(page_dir_struct* src) {
 	uint32 phyAddr;
+	
 	page_dir_struct* newdir = (page_dir_struct*)_malloc_ap(sizeof(page_dir_struct), &phyAddr);
 	memset(newdir, 0, sizeof(page_dir_struct));
-
+	printf("%x, %x\n", cur_vm_page_dir->page_table, newdir);
+	printf("%x, %x\n", cur_vm_page_dir->page_table_phy[2], phyAddr);
 	uint32 offset = (uint32)newdir->page_table_phy - (uint32)newdir;
-	printf("%x\n", newdir->page_table_phy);
 	newdir->page_dir_phy = phyAddr + 0x1000;	// 			if(cur_vm_page_dir->page_table[j]->pages[k].frame != 0)
-
+	
 
 	int i = 0;
 	for (i = 0; i < 1024; i++) {
 		if (src->page_table[i] == NULL) continue;
-
+		//printf("here:%d, %x, %x\n",i, vm_page_dir->page_table[i], src->page_table[i]);
+		
 		if (vm_page_dir->page_table[i] == src->page_table[i]) {
 			newdir->page_table[i] = src->page_table[i];
 			newdir->page_table_phy[i] = src->page_table_phy[i];
 		}
 		else {
+			//printf("here\n");
 			uint32 phys;
 			newdir->page_table[i] = clone_table(src->page_table[i], &phys);
 			newdir->page_table_phy[i] = phys | 0x07;
@@ -224,10 +228,10 @@ page_dir_struct* clone_dir(page_dir_struct* src) {
 static page_table_struct* clone_table(page_table_struct* src, uint32* phys) {
 	page_table_struct* table = (page_table_struct*)_malloc_ap(sizeof(page_table_struct), phys);
 	memset(table, 0, sizeof(page_table_struct));
-
+	
 	int i = 0;
 	for (i = 0; i < 1024; i++) {
-		//printf("f:%d  ", src->pages[i].frame);
+		//printf("f:%d \n", src->pages[i].frame);
 		if (!src->pages[i].frame) continue;
 
 		alloc_frame(&table->pages[i], 0, 0);

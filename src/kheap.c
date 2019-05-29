@@ -161,7 +161,7 @@ void* alloc(uint32 size, uint8 page_align, heap_t* heap) {
 		return alloc(size, page_align, heap);
 	}	
 
-	header_t* origin_hole_header = (header_t*)find_sorted_array(iter, &heap->index);
+	header_t* origin_hole_header = (header_t*)find_sorted_array(iter, &heap->index); //printf("o_h_h:%x\n", origin_hole_header);
 	uint32 origin_hole_pos = (uint32)origin_hole_header;
 	uint32 origin_hole_size = origin_hole_header->size;
 	if (origin_hole_size - new_size < sizeof(header_t) + sizeof(footer_t)) {
@@ -186,7 +186,7 @@ void* alloc(uint32 size, uint8 page_align, heap_t* heap) {
 	else {
 		remove_sorted_array(iter, &heap->index);
 	}
-
+	//printf("o_h_p:%x, %x\n", origin_hole_pos,size);
 	header_t *block_header = (header_t*)origin_hole_pos;
 	block_header->magic = HEAP_MAGIC;
 	block_header->is_hole = 0;
@@ -197,7 +197,7 @@ void* alloc(uint32 size, uint8 page_align, heap_t* heap) {
 	
 	/* the size of hole is bigger than what we need*/
 	if (origin_hole_size > new_size) {
-		header_t *hole_header = (header_t*)(origin_hole_pos + sizeof(header_t) + sizeof(footer_t));
+		header_t *hole_header = (header_t*)(origin_hole_pos + sizeof(header_t) + sizeof(footer_t) + size);
 		hole_header->magic = HEAP_MAGIC;
 		hole_header->is_hole = 1;
 		hole_header->size = origin_hole_size - new_size;

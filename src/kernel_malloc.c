@@ -48,6 +48,7 @@ static void* _malloc(uint32 m_size, uint8 isAlign, uint32 *phy_address) {
 	}
 	else {
 		addr = alloc(m_size, isAlign, kheap);
+		//printf("there\n");
 		if(phy_address != NULL) {
 			page_struct* page = get_page((uint32)addr, 0, cur_vm_page_dir);
 			*phy_address = page->frame*0x1000 + ((uint32)addr & 0x00000FFF);

@@ -7,7 +7,6 @@ uint32 tick = 0;
 static void timer_callback(registers_t reg)
 {
 	tick ++;
-	//printf("%d\t", tick);
 	task_switch();
 }
 
