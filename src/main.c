@@ -23,25 +23,32 @@ int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 	monitor_write("hello, word!\n");
 	initial_esp = initial_stack;
 	init_descriptor_tables();
-	
+
+	asm volatile("sti");	
 	init_timer(1000);
 	uint32 initrd_location = *((uint32*)mboot_ptr->mods_addr);
 	uint32 initrd_end = *(uint32*)(mboot_ptr->mods_addr+4);
 	placement_address = initrd_end;
 	
 	init_paging();
+	printf("init multitask\n");
 
-	// init_multitask();
+	init_multitask();
 
-	// int ret = fork();
+	
+	//int ret = fork();
+	//printf("?????\n");
 	// if (ret = 0) {
-	// 	printf("this is child\n");
+	// 	for(;;)
+	// 		printf("this is child\n");
 	// }
 	// else {
-	// 	printf("this is parent\n");
+	// 	for(;;)
+	// 		printf("this is parent\n");
 	// }
+	//printf("parent\n");
 
-	fs_root = initialise_initrd(initrd_location);
+	//fs_root = initialise_initrd(initrd_location);
 	// printf("finish\n");
 	
 

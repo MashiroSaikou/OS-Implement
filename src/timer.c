@@ -7,12 +7,14 @@ uint32 tick = 0;
 static void timer_callback(registers_t reg)
 {
 	tick ++;
+	//printf("%d\t", tick);
 	task_switch();
 }
 
 void init_timer(uint32 f)
 {
 	//monitor_write("5");
+	asm volatile("cli");
 	register_interrupt_handler(IRQ0, &timer_callback);
 	uint32 divisor = 1193180/f;
 	outb(0x43, 0x36);

@@ -7,9 +7,10 @@
 extern uint32 __end;
 extern heap_t* kheap;
 extern page_dir_struct* vm_page_dir;
+extern page_dir_struct* cur_vm_page_dir;
 uint32 placement_address = (uint32)&__end;
 
-static void* _malloc(uint32 m_size, size_t isAlign, uint32* phy_address);
+static void* _malloc(uint32 m_size, uint8 isAlign, uint32* phy_address);
 /*
 alloc extendly memory the size of which is m_size
 beginning from placement_address
@@ -32,7 +33,7 @@ void* _malloc_ap(uint32 m_size, uint32 *phy_address)
 	return _malloc(m_size, 1, phy_address);
 }
 
-static void* _malloc(uint32 m_size, size_t isAlign, uint32 *phy_address) {
+static void* _malloc(uint32 m_size, uint8 isAlign, uint32 *phy_address) {
 	void *addr = NULL;
 	if (kheap == NULL) {
 		if(isAlign == 1 && (placement_address & 0x00000FFF)) {
@@ -48,13 +49,13 @@ static void* _malloc(uint32 m_size, size_t isAlign, uint32 *phy_address) {
 	else {
 		addr = alloc(m_size, isAlign, kheap);
 		if(phy_address != NULL) {
-			page_struct* page = get_page((uint32)addr, 0, vm_page_dir);
+			page_struct* page = get_page((uint32)addr, 0, cur_vm_page_dir);
 			*phy_address = page->frame*0x1000 + ((uint32)addr & 0x00000FFF);
 		}
 	}
-
 	return addr;
 }
+
 void kfree(void* addr) {
 	free(addr, kheap);
 }

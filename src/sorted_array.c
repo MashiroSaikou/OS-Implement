@@ -1,6 +1,7 @@
 #include "sorted_array.h"
 #include "kernel_malloc.h"
 #include "page.h"
+extern page_dir_struct* cur_vm_page_dir;
 /*it is a descending comparison function*/
 int cmp(void* a, void *b)
 {
@@ -41,23 +42,24 @@ void free_sorted_array(sorted_array_t *array)
 void insert_sorted_array(void* item, sorted_array_t *a)
 {
 	uint32 iter = 0;
-	while (iter < a->size && a->cmp_fun(a->array[iter], item) < 0) {
+	while (iter < a->cur && a->cmp_fun(a->array[iter], item) < 0) {
 		iter ++;
 	}
-	
-	if (iter == a->size){
-		a->array[a->size++] = item;
+	if (iter == a->cur){
+		a->array[a->cur++] = item;
 	}
 	else {
 		void* temp = a->array[iter];
 		a->array[iter] = item;
-		while (iter <= a->size){
+		
+		while (iter <= a->cur){
 			void* temp_2 = a->array[++iter];
 			a->array[iter] = temp;
 			temp = temp_2;
 		}
-		a->size += 1;
+		a->cur += 1;
 	}
+
 }
 
 void* find_sorted_array(uint32 index, sorted_array_t *a)

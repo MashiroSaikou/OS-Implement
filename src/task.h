@@ -8,7 +8,17 @@
 extern page_dir_struct* cur_vm_page_dir;
 extern page_dir_struct* vm_page_dir;
 extern uint32 initial_esp;
-extern int read_eip();
+extern uint32 read_eip();
+
+typedef struct _context
+{
+    uint32 esp;
+    uint32 ebp;
+    uint32 ebx;
+    uint32 esi;
+    uint32 edi;
+    uint32 sflags;
+}context_t;
 
 typedef enum task_state {
     TASK_UNINIT = 0,    // 未初始化
@@ -22,6 +32,7 @@ typedef struct _pcb {
     uint32 esp,ebp;
     uint32 eip;
     volatile task_state_t state;
+    context_t context; 
     page_dir_struct* page_dir;
     struct _pcb* next;
 }pcb_t;
@@ -30,7 +41,7 @@ void init_multitask();
 void task_switch();
 int fork();
 int getpid();
-
+void print_task();
 void move_stack(void* new_stack, uint32 size);
 
 #endif
