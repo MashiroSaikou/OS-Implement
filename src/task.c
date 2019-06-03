@@ -113,7 +113,7 @@ int getpid() {
 void task_switch() {
     if (!cur_task) return;
 
-    printf("now pid:%d\t", cur_task->pid); 
+    //printf("now pid:%d\t", cur_task->pid); 
     uint32 esp, ebp, eip;
     asm volatile("mov %%esp, %0" : "=r"(esp));
     asm volatile("mov %%ebp, %0" : "=r"(ebp));
@@ -134,7 +134,7 @@ void task_switch() {
     //printf("new:s;%x, b:%x, i:%x\n", esp, ebp, eip);
     cur_vm_page_dir = cur_task->page_dir;
     //for(;;);
-    printf("dir:%x\n", cur_vm_page_dir->page_dir_phy);
+    //printf("dir:%x\n", cur_vm_page_dir->page_dir_phy);
     // asm volatile("cli");
     // asm volatile("mov %0, %%esp" : : "r"(esp));
     // asm volatile("mov %0, %%ebp" : : "r"(ebp));

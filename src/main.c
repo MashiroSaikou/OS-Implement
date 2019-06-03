@@ -11,6 +11,7 @@
 #include "fs.h"
 #include "initrd.h"
 #include "task.h"
+#include "keyboard.h"
 
 struct multboot;
 uint32 initial_esp;
@@ -25,7 +26,7 @@ int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 	init_descriptor_tables();
 
 	asm volatile("sti");	
-	init_timer(1000);
+	init_timer(100);
 	uint32 initrd_location = *((uint32*)mboot_ptr->mods_addr);
 	uint32 initrd_end = *(uint32*)(mboot_ptr->mods_addr+4);
 	placement_address = initrd_end;
@@ -35,9 +36,25 @@ int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 	
 	init_multitask();
 
-	
-	int ret = fork();
+	init_keyboard_driver();
+	//int ret = fork();
 	printf("?????\n");
+	char c = '\0';
+	printf("waiting char\n");
+	while ((c = keyboard_getchar()) == '\0');
+	printf("have char\n");
+	while(c != '\n') {
+		printf("%c", c);
+		c = keyboard_getchar();
+	}
+	printf("finish char\n");
+
+	// if(ret == 0) {
+	// 	for(;;) printf("chilld\n");
+	// }
+	// else {
+	// 	for (;;) printf("parent\n");
+	// }
 	//for(;;);
 	// if (ret = 0) {
 	// 	for(;;)
