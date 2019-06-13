@@ -17,6 +17,32 @@ uint32 frames_bitmap_size;
 static void page_fault();
 static page_table_struct* clone_table(page_table_struct* src, uint32* phys);
 
+void print_pages_status() {
+	uint32 i;
+	uint8 j;
+	for (i = 0; i < frames_bitmap_size; i++){
+		if (frames[i] == 0x00) {
+			printf("-");
+		} 
+		else {
+			printf("*");
+		}
+		
+		// for(j = 0; j < 8; j ++){
+		// 	if (((~(0x80 >> j))|frames[i]) != 0xFFFFFFFF){
+		// 		//未使用
+		// 		//printf("-");
+		// 	}
+		// 	else {
+		// 		printf("*");
+		// 	}
+		// }
+		// if (i % 8 == 0) {
+		// 	printf("\n");
+		// }
+	}
+}
+
 static void set_frame(uint32 frame_addr)
 {
 	uint32 frame_index = frame_addr / 0x1000;
@@ -245,4 +271,15 @@ static page_table_struct* clone_table(page_table_struct* src, uint32* phys) {
 	}
 
 	return table;
+}
+
+void free_all_page(page_dir_struct* dir) {
+	page_struct* p = NULL;
+	int i = 0, j = 0;
+	for (i = 0; i < 1024; i++) {
+		page_table_struct* p_table = dir->page_table[i];
+		for (j = 0; j < 1024; j ++) {
+			free_frame(&(p_table->pages[j]));
+		}
+	}
 }

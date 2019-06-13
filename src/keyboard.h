@@ -50,4 +50,6 @@ void switch_layout(keymap_t *layout);
 // Returns '\0' if no character is available.
 char keyboard_getchar();
 
+uint32 scanf(char tip[256], char *v);
+
 #endif

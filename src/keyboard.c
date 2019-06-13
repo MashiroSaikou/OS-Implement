@@ -216,7 +216,7 @@ char keyboard_buffer[256];
 
 void init_keyboard_driver()
 {
-    printf("init\n");
+  printf("init\n");
   register_interrupt_handler(IRQ1, keyboard_handler);
   switch_layout(&gb);
 
@@ -293,4 +293,20 @@ static void keyboard_handler(registers_t regs)
         keyboard_buffer_end &= 255;
     }
   }
+}
+
+uint32 scanf(char *tip, char *v) {
+  printf("%s", tip);
+  char c = '\0';
+  char *t_v = v;
+  while ((c = keyboard_getchar()) == '\0');
+  while(c != '\n') {
+    if (c != '\0') {
+      printf("%c", c);
+      *t_v = c;
+      t_v++;
+    }
+    c = keyboard_getchar();
+	}
+  return 1;
 }

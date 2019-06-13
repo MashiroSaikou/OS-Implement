@@ -6,5 +6,6 @@ floppya: 1_44=/dev/loop0, status=inserted
 boot: a
 log: bochsout.txt
 mouse: enabled=0
+keyboard:keymap=/usr/share/bochs/keymaps/x11-pc-us.map
 clock: sync=realtime
 cpu: ips=2000000

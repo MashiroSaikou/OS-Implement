@@ -17,7 +17,8 @@ SOURCES=boot.o \
 			initrd.o\
 			task.o\
 			process.o\
-			
+			keyboard.o\
+			shell.o
 CFLAGS=-nostdlib -nostdinc -fno-builtin -fno-stack-protector -g -m32 -I.
 LDFLAGS=-Tlink.ld -melf_i386
 ASFLAGS=-felf

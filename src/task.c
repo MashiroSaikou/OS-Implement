@@ -56,12 +56,14 @@ void init_multitask() {
 }
 
 void print_task() {
+    asm volatile("cli");
     pcb_t* t = head_task;
     while(t!=NULL) {
         printf("%d, ",t->pid);
         t = t->next;
     }
     printf("\n");
+    asm volatile("sti");
 }
 
 int fork() {
@@ -153,4 +155,96 @@ void task_switch() {
     mov $0x12345, %%eax; \
     sti;                 \
     jmp *%%ecx;           " : : "r"(cur_vm_page_dir->page_dir_phy), "r"(esp), "r"(ebp), "r"(eip));
+}
+
+void task_exit() {
+    asm volatile("cli");
+    if (head_task == NULL || cur_task == NULL) {
+        return;
+    }
+    else {
+        uint32 esp, ebp, eip;
+
+        pcb_t * t = head_task;
+        while (t->next != cur_task) t = t->next;
+        pcb_t* t_cur_task = t->next;
+        t->next = t->next->next;
+        cur_task = t->next;
+
+        esp = cur_task->esp;
+        ebp = cur_task->ebp;
+        eip = cur_task->eip;
+
+        cur_vm_page_dir = cur_task->page_dir;
+        free_all_page(t_cur_task->page_dir);
+        kfree(t_cur_task);
+        asm volatile("         \
+        mov %0, %%cr3;       \
+        mov %1, %%esp;       \
+        mov %2, %%ebp;       \
+        mov %3, %%ecx;       \
+        mov $0x12345, %%eax; \
+        sti;                 \
+        jmp *%%ecx;           " : : "r"(cur_vm_page_dir->page_dir_phy), "r"(esp), "r"(ebp), "r"(eip));
+    }
+}
+
+void task_exit_pid(int pid) {
+    asm volatile("cli");
+    if (head_task == NULL || cur_task == NULL) {
+        return;
+    }
+    else {
+        pcb_t * t = head_task;
+        while (t->next->pid != pid) {
+            t = t->next;
+            if (t == head_task) {
+                printf("not thread with pid\n");
+                return;
+            }
+        }
+        pcb_t* t_cur_task = t->next;
+        t->next = t->next->next;
+
+        if (!cur_task) return;
+
+        //printf("now pid:%d\t", cur_task->pid); 
+        uint32 esp, ebp, eip;
+        asm volatile("mov %%esp, %0" : "=r"(esp));
+        asm volatile("mov %%ebp, %0" : "=r"(ebp));
+        
+        eip = read_eip();
+        if (eip == 0x12345) return;
+        
+        cur_task->eip = eip;
+        cur_task->esp = esp;
+        cur_task->ebp = ebp;
+
+        cur_task = t->next;
+
+        esp = cur_task->esp;
+        ebp = cur_task->ebp;
+        eip = cur_task->eip;
+
+        cur_vm_page_dir = cur_task->page_dir;
+        free_all_page(t_cur_task->page_dir);
+        kfree(t_cur_task);
+        asm volatile("         \
+        mov %0, %%cr3;       \
+        mov %1, %%esp;       \
+        mov %2, %%ebp;       \
+        mov %3, %%ecx;       \
+        mov $0x12345, %%eax; \
+        sti;                 \
+        jmp *%%ecx;           " : : "r"(cur_vm_page_dir->page_dir_phy), "r"(esp), "r"(ebp), "r"(eip));
+    }
+}
+
+void print_curtask() {
+    asm volatile("cli");
+    printf("pid:%d\n", cur_task->pid);
+    printf("esp:%x, ebp:%x, eip:%x\n", 
+                cur_task->esp, cur_task->ebp, cur_task->eip);
+    printf("page dir's address:%x", cur_task->page_dir);
+    asm volatile("sti");
 }

@@ -12,6 +12,7 @@
 #include "initrd.h"
 #include "task.h"
 #include "keyboard.h"
+#include "shell.h"
 
 struct multboot;
 uint32 initial_esp;
@@ -37,34 +38,36 @@ int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 	init_multitask();
 
 	init_keyboard_driver();
-	//int ret = fork();
-	printf("?????\n");
-	char c = '\0';
-	printf("waiting char\n");
-	while ((c = keyboard_getchar()) == '\0');
-	printf("have char\n");
-	while(c != '\n') {
-		printf("%c", c);
-		c = keyboard_getchar();
-	}
-	printf("finish char\n");
 
-	// if(ret == 0) {
-	// 	for(;;) printf("chilld\n");
+	// printf("?????\n");
+	// char c = '\0';
+	// printf("waiting char\n");
+	// while ((c = keyboard_getchar()) == '\0');
+	// printf("have char\n");
+	// while(c != '\n') {
+	// 	printf("%c", c);
+	// 	c = keyboard_getchar();
 	// }
-	// else {
-	// 	for (;;) printf("parent\n");
-	// }
-	//for(;;);
-	// if (ret = 0) {
-	// 	for(;;)
-	// 		printf("this is child\n");
-	// }
-	// else {
-	// 	for(;;)
-	// 		printf("this is parent\n");
-	// }
-	//printf("parent\n");
+	// printf("finish char\n");
+	
+	int ret = fork();
+	if(ret == 0) {
+		init_shell();
+		for (;;);
+	}
+	else {
+		int r = fork();
+		if (r == 0) {
+			printf("child\n");
+			for (;;);
+		}
+		else {
+			printf("parent\n");
+			for(;;);
+		}
+		for (;;); //printf("parent\n");
+	}
+
 
 	//fs_root = initialise_initrd(initrd_location);
 	// printf("finish\n");

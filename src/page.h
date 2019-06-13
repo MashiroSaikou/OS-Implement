@@ -36,7 +36,8 @@ void init_paging();
 page_struct* get_page(uint32 addr, int make, page_dir_struct* dir);
 void alloc_frame(page_struct* page, int is_kernel, int is_writable);
 void free_frame(page_struct* page);
+void free_all_page(page_dir_struct* dir);
 void switch_page_directory(page_dir_struct *dir);
-
+void print_pages_status();
 page_dir_struct* clone_dir(page_dir_struct* src);
 #endif							

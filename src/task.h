@@ -4,6 +4,7 @@
 #include "common.h"
 #include "type.h"
 #include "page.h"
+#include "kernel_malloc.h"
 
 extern page_dir_struct* cur_vm_page_dir;
 extern page_dir_struct* vm_page_dir;
@@ -42,6 +43,9 @@ void task_switch();
 int fork();
 int getpid();
 void print_task();
+void print_curtask();
 void move_stack(void* new_stack, uint32 size);
+void task_exit_pid(int pid);
+void task_exit();
 
 #endif
