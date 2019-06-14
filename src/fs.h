@@ -16,8 +16,8 @@ typedef struct _dirent dirent_t;
 
 typedef uint32 (*read_type_t)(fs_node_t*,uint32,uint32,uint8*);
 typedef uint32 (*write_type_t)(fs_node_t*,uint32,uint32,uint8*);
-typedef void (*open_type_t)(fs_node_t*);
-typedef void (*close_type_t)(fs_node_t*);
+typedef fs_node_t* (*open_type_t)(char*);
+typedef void (*close_type_t)(char*);
 typedef dirent_t* (*readdir_type_t)(fs_node_t*,uint32);
 typedef fs_node_t * (*finddir_type_t)(fs_node_t*,char *name);
 
@@ -50,8 +50,11 @@ extern fs_node_t* fs_root;
 
 uint32 read_fs(fs_node_t* node, uint32 offset, uint32 size, uint8* buffer);
 uint32 write_fs(fs_node_t* node, uint32 offset, uint32 size, uint8* buffer);
-void open_fs(fs_node_t* node, uint8 read, uint8 write);
-void close_fs(fs_node_t* node);
+fs_node_t* open_fs(fs_node_t* node, char* name, uint8 read, uint8 write);
+void close_fs(fs_node_t* node, char* name);
 dirent_t* readdir_fs(fs_node_t* node, uint32 index);
 fs_node_t* finddir_fs(fs_node_t* node, char* name);
+
+void print_all_file();
+void print_all_file_content();
 #endif

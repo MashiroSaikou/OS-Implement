@@ -216,7 +216,6 @@ char keyboard_buffer[256];
 
 void init_keyboard_driver()
 {
-  printf("init\n");
   register_interrupt_handler(IRQ1, keyboard_handler);
   switch_layout(&gb);
 

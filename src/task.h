@@ -36,6 +36,7 @@ typedef struct _pcb {
     context_t context; 
     page_dir_struct* page_dir;
     struct _pcb* next;
+    uint32 time;
 }pcb_t;
 
 void init_multitask();

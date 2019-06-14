@@ -62,6 +62,46 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
     return 0;
 }
 
+static fs_node_t* initrd_open(char* name) {
+    fs_node_t* t_root = (fs_node_t*)_malloc_s(sizeof(fs_node_t)*(initrd_header->nfiles+1));
+    memcpy(t_root, root_nodes, sizeof(fs_node_t)*initrd_header->nfiles);
+    initrd_header->nfiles += 1;
+    nroot_nodes = initrd_header->nfiles;
+
+    int i = nroot_nodes - 1;
+
+    strcpy(root_nodes[i].name, name);
+    root_nodes[i].mask = 0;
+    root_nodes[i].uid = 0;
+    root_nodes[i].gid = 0;
+    root_nodes[i].length = 0;
+    root_nodes[i].inode = i;
+    root_nodes[i].flags = FS_FILE;
+    root_nodes[i].read = &initrd_read;
+    root_nodes[i].write = 0;
+    root_nodes[i].readdir = 0;
+    root_nodes[i].finddir = 0;
+    root_nodes[i].open = 0;
+    root_nodes[i].close = 0;
+    root_nodes[i].impl = 0;
+
+    return &root_nodes[i];
+}
+
+static void initrd_close(char* name) {
+    int i = 0; 
+    for(i = 0; i < nroot_nodes; i++) {
+        if (strcmp(name, root_nodes[i].name) == 0) break;
+    }
+    for(;i+1<nroot_nodes; i++) {
+        root_nodes[i] = root_nodes[i+1];
+    }
+    fs_node_t* t_root = (fs_node_t*)_malloc_s(sizeof(fs_node_t)*(initrd_header->nfiles-1));
+    memcpy(t_root, root_nodes, sizeof(fs_node_t)*(initrd_header->nfiles-1));
+    initrd_header->nfiles -= 1;
+    nroot_nodes = initrd_header->nfiles;
+}
+
 fs_node_t* initialise_initrd(uint32 loc) {
     initrd_header = (initrd_header_t*)loc;
     file_headers = (initrd_file_header_t*)(loc + sizeof(initrd_header_t));
@@ -76,8 +116,8 @@ fs_node_t* initialise_initrd(uint32 loc) {
     initrd_root->flags = FS_DIRECTORY;
     initrd_root->read = 0;
     initrd_root->write = 0;
-    initrd_root->open = 0;
-    initrd_root->close = 0;
+    initrd_root->open = &initrd_open;
+    initrd_root->close = &initrd_close;
     initrd_root->readdir = &initrd_readdir;
     initrd_root->finddir = &initrd_finddir;
     initrd_root->ptr = 0;
@@ -93,8 +133,8 @@ fs_node_t* initialise_initrd(uint32 loc) {
     initrd_dev->flags = FS_DIRECTORY;
     initrd_dev->read = 0;
     initrd_dev->write = 0;
-    initrd_dev->open = 0;
-    initrd_dev->close = 0;
+    initrd_dev->open = &initrd_open;
+    initrd_dev->close = &initrd_close;
     initrd_dev->readdir = &initrd_readdir;
     initrd_dev->finddir = &initrd_finddir;
     initrd_dev->ptr = 0;
@@ -122,6 +162,6 @@ fs_node_t* initialise_initrd(uint32 loc) {
         root_nodes[i].close = 0;
         root_nodes[i].impl = 0;
     }
-
     return initrd_root;
 }
+

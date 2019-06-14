@@ -24,20 +24,48 @@ int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 	monitor_clear();
 	monitor_write("hello, word!\n");
 	initial_esp = initial_stack;
+	printf("[*]initialising descriptor tables...\n");
 	init_descriptor_tables();
+	printf("[^]descriptor tables ready\n");
 
-	asm volatile("sti");	
+	asm volatile("sti");
+	printf("[*]initialising timer...\n");	
 	init_timer(100);
+	printf("[^]timer ready\n");	
+
 	uint32 initrd_location = *((uint32*)mboot_ptr->mods_addr);
 	uint32 initrd_end = *(uint32*)(mboot_ptr->mods_addr+4);
 	placement_address = initrd_end;
 	
+	printf("[*]initialising page...\n");
 	init_paging();
-	printf("init multitask\n");
+	printf("[^]page ready\n");
 	
+	printf("[*]initialising multithread...\n");
 	init_multitask();
+	printf("[^]multithread raedy\n");
 
+	printf("[*]initialising keyboard I/O...\n");
 	init_keyboard_driver();
+	printf("[^]keyboard ready\n");
+
+	printf("[*]initialising VFS...\n");
+	fs_root = initialise_initrd(initrd_location);
+	printf("[^]VFS ready\n");
+
+	printf("=============welcome to mashiro's OS==============\n");
+	printf("=============p -a                      ==============\n");
+	printf("=============f -a -c -n -d            ==============\n");
+	printf("=============t -a -c -n -k            ==============\n");
+
+	int ret = fork();
+	if (ret == 0) {
+		init_shell();
+		for(;;);
+	}
+	else {
+		for(;;);
+	}
 
 	// printf("?????\n");
 	// char c = '\0';
@@ -50,24 +78,21 @@ int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 	// }
 	// printf("finish char\n");
 	
-	int ret = fork();
-	if(ret == 0) {
-		init_shell();
-		for (;;);
-	}
-	else {
-	    int r = fork();
-		if (r == 0) {
-			for(;;);
-		}
-		else {
-			for(;;);
-		}
-		for (;;); //printf("parent\n");
-	}
-
-
-	//fs_root = initialise_initrd(initrd_location);
+	// int ret = fork();
+	// if(ret == 0) {
+	// 	init_shell();
+	// 	for (;;);
+	// }
+	// else {
+	//     int r = fork();
+	// 	if (r == 0) {
+	// 		for(;;);
+	// 	}
+	// 	else {
+	// 		for(;;);
+	// 	}
+	// 	for (;;); //printf("parent\n");
+	// }
 	// printf("finish\n");
 	
 
@@ -75,24 +100,38 @@ int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 	// dirent_t *node = 0;
 	// while ((node = readdir_fs(fs_root, i)) != 0) {
 	// 	printf("find file:%s\n", node->name);
-	// 	fs_node_t *fsnode = finddir_fs(fs_root, node->name);
+	// 	// fs_node_t *fsnode = finddir_fs(fs_root, node->name);
 
-	// 	if((fsnode->flags&0x7) == FS_DIRECTORY) {
-	// 		printf("(directory)\n");
-	// 	}
-	// 	else {
-	// 		printf("contents:\"\n");
-	// 		char buf[256];
-	// 		uint32 sz = read_fs(fsnode, 0, 256, buf);
-	// 		int j;
-	// 		for (j = 0; j < sz; j++) {
-	// 			printf("%c",buf[j]);
-	// 		}
-	// 		printf("\"\n");
-	// 	}
+	// 	// if((fsnode->flags&0x7) == FS_DIRECTORY) {
+	// 	// 	printf("(directory)\n");
+	// 	// }
+	// 	// else {
+	// 	// 	printf("contents:\"\n");
+	// 	// 	char buf[256];
+	// 	// 	uint32 sz = read_fs(fsnode, 0, 256, buf);
+	// 	// 	int j;
+	// 	// 	for (j = 0; j < sz; j++) {
+	// 	// 		printf("%c",buf[j]);
+	// 	// 	}
+	// 	// 	printf("\"\n");
+	// 	// }
 
 	// 	i ++;
 	// }
-	
+	// i = 0;
+	// open_fs(fs_root, "mashiro.txt", 1, 1);
+	// while ((node = readdir_fs(fs_root, i)) != 0) {
+	// 	printf("find file:%s\n", node->name);
+
+	// 	i ++;
+	// }
+
+	// close_fs(fs_root, "mashiro.txt");
+	// i = 0;
+	// while ((node = readdir_fs(fs_root, i)) != 0) {
+	// 	printf("find file:%s\n", node->name);
+
+	// 	i ++;
+	// }
 	return 0;
 }

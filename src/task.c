@@ -7,7 +7,6 @@ uint32 next_pid = 1;
 void move_stack(void* new_stack, uint32 size) {
     uint32 i;
     for (i = (uint32) new_stack; i >= ((uint32)new_stack-size); i-=0x1000) {
-        printf("mashiro\n");
         alloc_frame(get_page(i, 1, cur_vm_page_dir), 0, 1);
     }
     //printf("mashiro\n");
@@ -73,6 +72,7 @@ int fork() {
     new_task->page_dir = dir;
     new_task->next = NULL;
     new_task->state = TASK_RUNNABLE;
+    new_task->time  = 0;
     
     pcb_t* tmp_task = (pcb_t*)head_task;
     while (tmp_task->next) {
@@ -117,6 +117,7 @@ void task_switch() {
     cur_task->eip = eip;
     cur_task->esp = esp;
     cur_task->ebp = ebp;
+    cur_task->time += 1;
     //printf("old:s;%x, b:%x, i:%x\n", esp, ebp, eip);
     cur_task = cur_task->next;
     if(!cur_task) cur_task = head_task;
@@ -239,10 +240,10 @@ void print_curtask() {
 void print_task() {
     //asm volatile("cli");
     pcb_t* t = head_task;
-    printf("pid    esp        eip        ebp        diraddr\n");
+    printf("pid    esp        eip        ebp        diraddr    time\n");
     do {
-        printf("%d    %x     %x     %x     %x\n", 
-                    t->pid, t->esp, t->eip, t->ebp, t->page_dir);
+        printf("%d    %x     %x     %x     %x    %d\n", 
+                    t->pid, t->esp, t->eip, t->ebp, t->page_dir, t->time);
         t = t->next;
     }while(t != NULL);
     //printf("running thread: pid %d", cur_task->pid);
