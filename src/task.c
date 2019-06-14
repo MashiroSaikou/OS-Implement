@@ -55,25 +55,16 @@ void init_multitask() {
     asm volatile("sti");
 }
 
-void print_task() {
-    asm volatile("cli");
-    pcb_t* t = head_task;
-    while(t!=NULL) {
-        printf("%d, ",t->pid);
-        t = t->next;
-    }
-    printf("\n");
-    asm volatile("sti");
-}
+
 
 int fork() {
     asm volatile("cli");
     
     pcb_t* parent_task = (pcb_t*)cur_task;
-    printf("fine\n");
+    //printf("fine\n");
     
     page_dir_struct *dir = clone_dir(cur_vm_page_dir);
-    printf("phy:%x\n",dir->page_dir_phy);
+    //printf("phy:%x\n",dir->page_dir_phy);
     pcb_t* new_task = (pcb_t*)_malloc_s(sizeof(pcb_t));
 
     new_task->pid = next_pid++;
@@ -97,7 +88,7 @@ int fork() {
         new_task->esp = esp;
         new_task->ebp = ebp;
         new_task->eip = eip;
-        printf("newfork:s;%x, b:%x, i:%x", esp, ebp, eip);
+        //printf("newfork:s;%x, b:%x, i:%x", esp, ebp, eip);
         asm volatile("sti");
 
         return new_task->pid;
@@ -168,8 +159,8 @@ void task_exit() {
         pcb_t * t = head_task;
         while (t->next != cur_task) t = t->next;
         pcb_t* t_cur_task = t->next;
-        t->next = t->next->next;
-        cur_task = t->next;
+        t->next = t_cur_task->next;
+        cur_task = t;
 
         esp = cur_task->esp;
         ebp = cur_task->ebp;
@@ -198,13 +189,13 @@ void task_exit_pid(int pid) {
         pcb_t * t = head_task;
         while (t->next->pid != pid) {
             t = t->next;
-            if (t == head_task) {
+            if (t == NULL) {
                 printf("not thread with pid\n");
                 return;
             }
         }
         pcb_t* t_cur_task = t->next;
-        t->next = t->next->next;
+        t->next = t_cur_task->next;
 
         if (!cur_task) return;
 
@@ -220,15 +211,14 @@ void task_exit_pid(int pid) {
         cur_task->esp = esp;
         cur_task->ebp = ebp;
 
-        cur_task = t->next;
+        cur_task = t;
 
         esp = cur_task->esp;
         ebp = cur_task->ebp;
         eip = cur_task->eip;
 
         cur_vm_page_dir = cur_task->page_dir;
-        free_all_page(t_cur_task->page_dir);
-        kfree(t_cur_task);
+
         asm volatile("         \
         mov %0, %%cr3;       \
         mov %1, %%esp;       \
@@ -241,10 +231,32 @@ void task_exit_pid(int pid) {
 }
 
 void print_curtask() {
-    asm volatile("cli");
-    printf("pid:%d\n", cur_task->pid);
-    printf("esp:%x, ebp:%x, eip:%x\n", 
-                cur_task->esp, cur_task->ebp, cur_task->eip);
-    printf("page dir's address:%x", cur_task->page_dir);
-    asm volatile("sti");
+    //asm volatile("cli");
+    printf("cur pid:%d\n", cur_task->pid);
+    //asm volatile("sti");
 }
+
+void print_task() {
+    //asm volatile("cli");
+    pcb_t* t = head_task;
+    printf("pid    esp        eip        ebp        diraddr\n");
+    do {
+        printf("%d    %x     %x     %x     %x\n", 
+                    t->pid, t->esp, t->eip, t->ebp, t->page_dir);
+        t = t->next;
+    }while(t != NULL);
+    //printf("running thread: pid %d", cur_task->pid);
+    printf("\n");
+    //asm volatile("sti");
+}
+
+void create_task() {
+    int ret = fork();
+    if (ret == 0) {
+        for(;;);
+    }
+    else {
+        return;
+    }
+}
+

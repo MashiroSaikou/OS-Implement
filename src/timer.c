@@ -7,10 +7,8 @@ uint32 tick = 0;
 static void timer_callback(registers_t reg)
 {
 	tick ++;
-	if (tick == 10) {
-		task_switch();
-		tick = 0;
-	}
+	//print_curtask();
+	task_switch();
 }
 
 void init_timer(uint32 f)

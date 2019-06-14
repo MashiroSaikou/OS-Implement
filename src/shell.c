@@ -27,11 +27,18 @@ static uint32 thread_test(char* v) {
     switch (v[3])
     {
     case 'a':
-        /* 显示内存页面使用情况*/
+        /* 显示进程使用情况*/
         print_task();
         break;
     case 'c':
         print_curtask();
+        break;
+    case 'n':
+        create_task();
+        break;
+    case 'k':
+        if(v[5] >'9' || v[5] < '2') break;
+        task_exit_pid(v[5]-'0');
         break;
     default:
         return -1;

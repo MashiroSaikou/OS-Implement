@@ -21,6 +21,17 @@ static uint32 initrd_read(fs_node_t* node, uint32 offset, uint32 size, uint8* bu
     return size;
 }
 
+static uint32 initrd_write(fs_node_t* node, uint32 offset, uint32 size, uint8* buffer) {
+    initrd_file_header_t header = file_headers[node->inode];
+    if (offset > header.length) {
+        return 0;
+    }
+    if (offset + size > header.length) {
+        size = header.length - offset;
+    }
+    memcpy((uint8*)(header.offset + offset), buffer, size);
+}
+
 static dirent_t* initrd_readdir(fs_node_t* node, uint32 index) {
     if (node == initrd_root && index == 0) {
         strcpy(dirent.name, "dev");

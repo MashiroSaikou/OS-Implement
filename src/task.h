@@ -47,5 +47,6 @@ void print_curtask();
 void move_stack(void* new_stack, uint32 size);
 void task_exit_pid(int pid);
 void task_exit();
+void create_task();
 
 #endif

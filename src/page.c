@@ -226,8 +226,8 @@ page_dir_struct* clone_dir(page_dir_struct* src) {
 	
 	page_dir_struct* newdir = (page_dir_struct*)_malloc_ap(sizeof(page_dir_struct), &phyAddr);
 	memset(newdir, 0, sizeof(page_dir_struct));
-	printf("%x, %x\n", cur_vm_page_dir->page_table, newdir);
-	printf("%x, %x\n", cur_vm_page_dir->page_table_phy[2], phyAddr);
+	//printf("%x, %x\n", cur_vm_page_dir->page_table, newdir);
+	//printf("%x, %x\n", cur_vm_page_dir->page_table_phy[2], phyAddr);
 	uint32 offset = (uint32)newdir->page_table_phy - (uint32)newdir;
 	newdir->page_dir_phy = phyAddr + 0x1000;	// 			if(cur_vm_page_dir->page_table[j]->pages[k].frame != 0)
 	

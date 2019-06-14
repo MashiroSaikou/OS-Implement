@@ -56,13 +56,11 @@ int main(struct multiboot *mboot_ptr, uint32 initial_stack)
 		for (;;);
 	}
 	else {
-		int r = fork();
+	    int r = fork();
 		if (r == 0) {
-			printf("child\n");
-			for (;;);
+			for(;;);
 		}
 		else {
-			printf("parent\n");
 			for(;;);
 		}
 		for (;;); //printf("parent\n");
